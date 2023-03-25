@@ -61,7 +61,7 @@ async def handle_new_message(event):
             await event.respond((replies[prompt]))
 
         # id
-        print("Received a message from: "+str(event.message.sender_id)+" - "+" ".join(message_body.split()[0:10])+"...")
+        print("Received a message from: "+str(event.message.sender_id)+" - "+" ".join(message_body.split()[0:10]))
         # delete the received message
         await client.delete_messages(event.chat_id, event.message)
 
