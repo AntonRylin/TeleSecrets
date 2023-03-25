@@ -13,7 +13,7 @@ session_name = "ChatBot"
 client = TelegramClient(session_name, api_id, api_hash)
 
 # configuration
-auto_save = True  # True to treat all messages as save prompts
+auto_save = True  # True to treat all messages as save-prompts
 stealth = True  # True to provide no feedback
 
 
@@ -50,24 +50,22 @@ async def handle_new_message(event):
         if prompt == "save":
 
             try:
-                open(existing, "a").write(timestamp+message_body)
+                open(existing, "a").write(timestamp + message_body)
             except:
-                open(existing, "w").write(timestamp+message_body)
-
-
+                open(existing, "w").write(timestamp + message_body)
 
         # reply / feedback
         if not stealth:
             await event.respond((replies[prompt]))
 
         # id
-        print("Received a message from: "+str(event.message.sender_id)+" - "+" ".join(message_body.split()[0:10]))
+        print("Received a message from: " + str(event.message.sender_id) + " - " + " ".join(message_body.split()[0:10]))
         # delete the received message
         await client.delete_messages(event.chat_id, event.message)
 
     except:
         if not stealth:
-            await event.respond("not understood, try 'help'")
+            await event.respond(replies["exception"])
 
 
 # forever running
