@@ -4,9 +4,9 @@ import datetime
 import os
 
 # Log in information
-api_id = 0
-api_hash = ''
-phone_number = ''
+api_id = 20370416
+api_hash = '8a87367a3e969d4f52c4c4f90549ca38'
+phone_number = '+4366499489619'
 session_name = "ChatBot"
 
 # client Init
