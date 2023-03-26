@@ -5,7 +5,7 @@ import os
 import threading
 
 
-async def answer():
+async def answer_console():
     reply = input("answering to " + str(last_id) + ": ")
     if reply:
         await client.send_message(last_id, reply)
@@ -25,11 +25,11 @@ client = TelegramClient('TeleSecrets', api_id, api_hash)
 # configuration
 auto_save = True  # True to treat all messages as save-prompts
 stealth = True  # True to provide no feedback
-
+console = False
 
 # define an event handler for incoming messages
 @client.on(events.NewMessage(incoming=True))
-async def handle_new_message(event, input_thread=None):
+async def handle_new_message(event):
     #try:
 
         # index
@@ -71,19 +71,28 @@ async def handle_new_message(event, input_thread=None):
         if not stealth:
             await event.respond((replies[prompt]))
 
-        # console: message received
-        print("Received message from: " + str(event.message.sender_id) + " - " + " ".join(message_body.split()[0:10]))
+        if console:
+            # console: message received
+            print("Received message from: " + str(event.message.sender_id) + " - " + " ".join(message_body.split()[0:10]))
+        else:
+            await client.send_message("me", "from "+str(id)+timestamp+message_body)
 
         # delete the received message from telegram
         await client.delete_messages(event.chat_id, event.message)
 
-        # awaiting response
-        await answer()
+        if console:
+            # awaiting response
+            await answer_console()
 
     #except:
         if not stealth:
             await event.respond(replies["exception"])
 
+
+# define an event handler for incoming messages
+@client.on(events.NewMessage(incoming=False))
+async def handle_new_message(event):
+    await client.send_message(last_id, event.message.text)
 
 # forever running
 client.start()
