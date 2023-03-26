@@ -1,2 +1,3 @@
-ChatBot.session
+*.session
 /saved
+credentials.txt

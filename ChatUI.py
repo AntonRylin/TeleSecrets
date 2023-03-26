@@ -2,15 +2,25 @@ from telethon import TelegramClient, events
 from Replies import replies
 import datetime
 import os
+import threading
+
+
+async def answer():
+    reply = input("answering to " + str(last_id) + ": ")
+    if reply:
+        await client.send_message(last_id, reply)
+        print("message sent to: " + str(last_id) + " - ", reply)
+
 
 # Log in information
-api_id = 20370416
-api_hash = '8a87367a3e969d4f52c4c4f90549ca38'
-phone_number = '+4366499489619'
-session_name = "ChatBot"
+with open("credentials.txt", "r") as file:
+    lines = file.readlines()
+    api_id = int(lines[2].strip())
+    api_hash = str(lines[3].strip())
+    phone_number = str(lines[4].strip())
 
 # client Init
-client = TelegramClient(session_name, api_id, api_hash)
+client = TelegramClient('TeleSecrets', api_id, api_hash)
 
 # configuration
 auto_save = True  # True to treat all messages as save-prompts
@@ -19,8 +29,8 @@ stealth = True  # True to provide no feedback
 
 # define an event handler for incoming messages
 @client.on(events.NewMessage(incoming=True))
-async def handle_new_message(event):
-    try:
+async def handle_new_message(event, input_thread=None):
+    #try:
 
         # index
         ind = 1
@@ -36,6 +46,9 @@ async def handle_new_message(event):
 
         # setup
         id = event.message.sender_id
+        global last_id
+
+        last_id = id
         message_body = " ".join(message.split()[ind:])
         now = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         existing = os.path.join("saved", str(id) + ".txt")
@@ -58,12 +71,16 @@ async def handle_new_message(event):
         if not stealth:
             await event.respond((replies[prompt]))
 
-        # id
-        print("Received a message from: " + str(event.message.sender_id) + " - " + " ".join(message_body.split()[0:10]))
-        # delete the received message
+        # console: message received
+        print("Received message from: " + str(event.message.sender_id) + " - " + " ".join(message_body.split()[0:10]))
+
+        # delete the received message from telegram
         await client.delete_messages(event.chat_id, event.message)
 
-    except:
+        # awaiting response
+        await answer()
+
+    #except:
         if not stealth:
             await event.respond(replies["exception"])
 
