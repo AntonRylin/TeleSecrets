@@ -3,12 +3,13 @@ from Replies import replies
 import datetime
 import os
 import asyncio
+from Contacts import name
 import threading
 
 
 # Console input function
 async def answer():
-    reply = input(f"Your reply to {last_id} is: -> ")
+    reply = input(f"Your reply to {name(last_id)} is: -> ")
     if reply != "":
         await client.send_message(last_id, reply)
         # print(f"message sent to: {last_id} - {reply}")
@@ -67,15 +68,15 @@ async def handle_new_message(event):
 
     # logging to console
     if console:
-        print(f"Received message from: {event.message.sender_id} - {' '.join(message_body.split()[:10])}")
+        print(f"Received message from: {name(event.message.sender_id)} - {' '.join(message_body.split()[:10])}")
     else:
         await client.send_message("me", f"from {id}{timestamp}{message_body}")
 
-    # secret cleanup
-    await client.delete_messages(event.chat_id, event.message)
-
     # replying to message
     await answer()
+
+    # secret cleanup
+    await client.delete_messages(event.chat_id, event.message)
 
     # wrong input
   except:
