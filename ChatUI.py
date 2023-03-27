@@ -2,14 +2,18 @@ from telethon import TelegramClient, events
 from Replies import replies
 import datetime
 import os
+import asyncio
 import threading
 
 
-async def answer_console():
-    reply = input("answering to " + str(last_id) + ": ")
-    if reply:
+# Console input function
+async def answer():
+    reply = input(f"Your reply to {last_id} is: -> ")
+    if reply != "":
         await client.send_message(last_id, reply)
-        print("message sent to: " + str(last_id) + " - ", reply)
+        # print(f"message sent to: {last_id} - {reply}")
+    else:
+        return
 
 
 # Log in information
@@ -22,78 +26,69 @@ with open("credentials.txt", "r") as file:
 # client Init
 client = TelegramClient('TeleSecrets', api_id, api_hash)
 
-# configuration
-auto_save = True  # True to treat all messages as save-prompts
-stealth = True  # True to provide no feedback
-console = False
+# Add an event for communication between threads
+stop_event = asyncio.Event()
 
-# define an event handler for incoming messages
+# configuration
+auto_save = True
+stealth = True
+console = True
+
+
 @client.on(events.NewMessage(incoming=True))
 async def handle_new_message(event):
-    #try:
+  try:
 
-        # index
-        ind = 1
+    # getting started with new message
+    message = event.message.text
+    prompt = message.split()[0].lower() if not auto_save else "save"
+    ind = 0 if auto_save else 1
+    id = event.message.sender_id
+    global last_id
+    last_id = id
+    message_body = " ".join(message.split()[ind:])
+    now = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    existing = os.path.join("saved", f"{id}.txt")
+    timestamp = f"\n{now}:\n"
 
-        # prompt
-        message: str = event.message.text
-        prompt: str = message.split()[0].lower()
+    # actions on input
+    if prompt == "bye":
+        await event.respond((replies[prompt]))
+        client.disconnect()
+    elif prompt == "save":
+        try:  # save message
+            open(existing, "a").write(timestamp + message_body)
+        except FileNotFoundError:
+            open(existing, "w").file.write(timestamp + message_body)
 
-        # auto save
-        if auto_save:
-            prompt = "save"
-            ind = 0
+    # responses to input
+    if not stealth:
+        await event.respond((replies[prompt]))
 
-        # setup
-        id = event.message.sender_id
-        global last_id
+    # logging to console
+    if console:
+        print(f"Received message from: {event.message.sender_id} - {' '.join(message_body.split()[:10])}")
+    else:
+        await client.send_message("me", f"from {id}{timestamp}{message_body}")
 
-        last_id = id
-        message_body = " ".join(message.split()[ind:])
-        now = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        existing = os.path.join("saved", str(id) + ".txt")
-        timestamp = "\n" + now + ":\n"
+    # secret cleanup
+    await client.delete_messages(event.chat_id, event.message)
 
-        # stop bot option
-        if prompt == "bye":
-            await event.respond((replies[prompt]))
-            client.disconnect()
+    # replying to message
+    await answer()
 
-        # save prompt
-        if prompt == "save":
-
-            try:
-                open(existing, "a").write(timestamp + message_body)
-            except:
-                open(existing, "w").write(timestamp + message_body)
-
-        # reply / feedback
-        if not stealth:
-            await event.respond((replies[prompt]))
-
-        if console:
-            # console: message received
-            print("Received message from: " + str(event.message.sender_id) + " - " + " ".join(message_body.split()[0:10]))
-        else:
-            await client.send_message("me", "from "+str(id)+timestamp+message_body)
-
-        # delete the received message from telegram
-        await client.delete_messages(event.chat_id, event.message)
-
-        if console:
-            # awaiting response
-            await answer_console()
-
-    #except:
-        if not stealth:
-            await event.respond(replies["exception"])
+    # wrong input
+  except:
+    if not stealth:
+        await event.respond(replies["exception"])
 
 
-# define an event handler for incoming messages
+# while sending messages
 @client.on(events.NewMessage(incoming=False))
 async def handle_new_message(event):
-    await client.send_message(last_id, event.message.text)
+    # await client.send_message(last_id, event.message.text)
+    pass
 
-# forever running
+
 client.start()
 client.run_until_disconnected()
